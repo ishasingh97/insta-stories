@@ -1,0 +1,66 @@
+
+[
+    {
+      "userId": 1,
+      "username": "Dummy User 1",
+      "profileImage": "/profilePicture/user1.jpg",
+      "stories": [
+        {
+          "id": 1,
+          "image": "/images/image1.jpg",
+          "timestamp": 1678901234
+        },
+        {
+          "id": 2,
+          "image": "/images/image2.jpg",
+          "timestamp": 1678901235
+        }
+      ]
+    },
+    {
+      "userId": 2,
+      "username": "Dummy User 2",
+      "profileImage": "/profilePicture/user2.jpg",
+      "stories": [
+        {
+          "id": 1,
+          "image": "/images/image3.jpg",
+          "timestamp": 1678901236
+        }
+      ]
+    },
+    {
+        "userId": 3,
+        "username": "Dummy User 3",
+        "profileImage": "/profilePicture/user3.jpg",
+        "stories": [
+          {
+            "id": 1,
+            "image": "/images/image4.jpg",
+            "timestamp": 1678901237
+          },
+          {
+            "id": 2,
+            "image": "/images/image1.jpg",
+            "timestamp": 1678901238
+          },
+          {
+            "id": 3,
+            "image": "/images/image2.jpg",
+            "timestamp": 1678901239
+          }
+        ]
+      },
+      {
+        "userId": 4,
+        "username": "Dummy User 4",
+        "profileImage": "/profilePicture/user4.jpg",
+        "stories": [
+            {
+                "id": 1,
+                "image": "/images/image3.jpg",
+                "timestamp": 1678901240
+            }   
+        ]
+      }
+  ]
