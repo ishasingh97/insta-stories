@@ -51,7 +51,8 @@ module.exports = {
           globOptions: {
             ignore: ["**/index.html"],
           },
-        }
+        },
+        { from: 'public/_redirects', to: '' } 
       ],
     }),
   ],
