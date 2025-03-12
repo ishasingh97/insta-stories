@@ -10,15 +10,26 @@ interface Props {
   userStories: UserStory[];
 }
 
-const StoryViewer = ({ storyId, userId, onClose, userStories }: Props) => {
-  if (storyId === null || userId === null || userStories.length === 0) return null;
-
+const StoryViewerInner = ({ storyId, userId, onClose, userStories }: Props) => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const isClosingRef = useRef(false);
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isFirstRenderRef = useRef(true);
 
-  const [currentUserIndex, setCurrentUserIndex] = useState(0);
-  const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
+  const [currentUserIndex, setCurrentUserIndex] = useState(() => {
+    const userIndex = userStories.findIndex(u => u.userId === userId);
+    return userIndex !== -1 ? userIndex : 0;
+  });
+  
+  const [currentStoryIndex, setCurrentStoryIndex] = useState(() => {
+    const userIndex = userStories.findIndex(u => u.userId === userId);
+    if (userIndex !== -1) {
+      const storyIndex = userStories[userIndex].stories.findIndex(s => s.id === storyId);
+      return storyIndex !== -1 ? storyIndex : 0;
+    }
+    return 0;
+  });
+  
   const [isPaused, setIsPaused] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -43,17 +54,6 @@ const StoryViewer = ({ storyId, userId, onClose, userStories }: Props) => {
   const stories = currentUser?.stories || [];
 
   useEffect(() => {
-    isClosingRef.current = false;
-    
-    const userIndex = userStories.findIndex(u => u.userId === userId);
-    if (userIndex !== -1) {
-      setCurrentUserIndex(userIndex);
-      const storyIndex = userStories[userIndex].stories.findIndex(s => s.id === storyId);
-      setCurrentStoryIndex(storyIndex !== -1 ? storyIndex : 0);
-      
-      setIsLoading(true);
-    }
-    
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -65,7 +65,7 @@ const StoryViewer = ({ storyId, userId, onClose, userStories }: Props) => {
         loadingTimeoutRef.current = null;
       }
     };
-  }, [userId, storyId, userStories]);
+  }, []);
 
   useEffect(() => {
     if (loadingTimeoutRef.current) {
@@ -87,15 +87,18 @@ const StoryViewer = ({ storyId, userId, onClose, userStories }: Props) => {
     
     img.onload = () => {
       setIsLoading(false);
+      isFirstRenderRef.current = false;
     };
     
     img.onerror = () => {
       setIsLoading(false);
       console.error('Failed to load image:', stories[currentStoryIndex].image);
+      isFirstRenderRef.current = false;
     };
     
     loadingTimeoutRef.current = setTimeout(() => {
       setIsLoading(false);
+      isFirstRenderRef.current = false;
     }, 5000);
     
     return () => {
@@ -112,20 +115,20 @@ const StoryViewer = ({ storyId, userId, onClose, userStories }: Props) => {
       intervalRef.current = null;
     }
     
-    if (isPaused || isLoading || isClosingRef.current) return;
-
-    if (!isLoading) {
-      intervalRef.current = setInterval(() => {
-        if (currentStoryIndex < stories.length - 1) {
-          setCurrentStoryIndex(prev => prev + 1);
-        } else if (currentUserIndex < userStories.length - 1) {
-          setCurrentUserIndex(prev => prev + 1);
-          setCurrentStoryIndex(0);
-        } else {
-          safeClose();
-        }
-      }, 5000);
+    if (isPaused || isLoading || isClosingRef.current || isFirstRenderRef.current) {
+      return;
     }
+
+    intervalRef.current = setInterval(() => {
+      if (currentStoryIndex < stories.length - 1) {
+        setCurrentStoryIndex(prev => prev + 1);
+      } else if (currentUserIndex < userStories.length - 1) {
+        setCurrentUserIndex(prev => prev + 1);
+        setCurrentStoryIndex(0);
+      } else {
+        safeClose();
+      }
+    }, 5000);
 
     return () => {
       if (intervalRef.current) {
@@ -133,7 +136,15 @@ const StoryViewer = ({ storyId, userId, onClose, userStories }: Props) => {
         intervalRef.current = null;
       }
     };
-  }, [currentStoryIndex, currentUserIndex, stories.length, userStories.length, safeClose, isPaused, isLoading]);
+  }, [
+    currentStoryIndex, 
+    currentUserIndex, 
+    stories.length, 
+    userStories.length, 
+    safeClose, 
+    isPaused, 
+    isLoading
+  ]);
 
   const handleNext = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
@@ -225,6 +236,14 @@ const StoryViewer = ({ storyId, userId, onClose, userStories }: Props) => {
       {isLoading && <LoadingSpinner />}
     </StoryViewerStyles>
   );
+};
+
+const StoryViewer = (props: Props) => {
+  const { storyId, userId } = props;
+  
+  if (storyId === null || userId === null || props.userStories.length === 0) return null;
+  
+  return <StoryViewerInner key={`story-${userId}-${storyId}`} {...props} />;
 };
 
 export { StoryViewer };
