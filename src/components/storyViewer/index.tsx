@@ -15,6 +15,7 @@ const StoryViewer = ({ storyId, userId, onClose, userStories }: Props) => {
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const isClosingRef = useRef(false);
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [currentUserIndex, setCurrentUserIndex] = useState(0);
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
@@ -28,6 +29,11 @@ const StoryViewer = ({ storyId, userId, onClose, userStories }: Props) => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
+    }
+    
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+      loadingTimeoutRef.current = null;
     }
     
     onClose();
@@ -44,6 +50,8 @@ const StoryViewer = ({ storyId, userId, onClose, userStories }: Props) => {
       setCurrentUserIndex(userIndex);
       const storyIndex = userStories[userIndex].stories.findIndex(s => s.id === storyId);
       setCurrentStoryIndex(storyIndex !== -1 ? storyIndex : 0);
+      
+      setIsLoading(true);
     }
     
     return () => {
@@ -51,23 +59,51 @@ const StoryViewer = ({ storyId, userId, onClose, userStories }: Props) => {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+      
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
     };
   }, [userId, storyId, userStories]);
 
   useEffect(() => {
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+      loadingTimeoutRef.current = null;
+    }
+    
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    
     if (!stories[currentStoryIndex]?.image) return;
     
     setIsLoading(true);
+    
     const img = new Image();
     img.src = stories[currentStoryIndex].image;
-    img.onload = () => setIsLoading(false);
+    
+    img.onload = () => {
+      setIsLoading(false);
+    };
+    
     img.onerror = () => {
       setIsLoading(false);
       console.error('Failed to load image:', stories[currentStoryIndex].image);
     };
     
-    const timeout = setTimeout(() => setIsLoading(false), 5000);
-    return () => clearTimeout(timeout);
+    loadingTimeoutRef.current = setTimeout(() => {
+      setIsLoading(false);
+    }, 5000);
+    
+    return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
+    };
   }, [currentStoryIndex, stories]);
 
   useEffect(() => {
@@ -78,16 +114,18 @@ const StoryViewer = ({ storyId, userId, onClose, userStories }: Props) => {
     
     if (isPaused || isLoading || isClosingRef.current) return;
 
-    intervalRef.current = setInterval(() => {
-      if (currentStoryIndex < stories.length - 1) {
-        setCurrentStoryIndex(prev => prev + 1);
-      } else if (currentUserIndex < userStories.length - 1) {
-        setCurrentUserIndex(prev => prev + 1);
-        setCurrentStoryIndex(0);
-      } else {
-        safeClose();
-      }
-    }, 5000);
+    if (!isLoading) {
+      intervalRef.current = setInterval(() => {
+        if (currentStoryIndex < stories.length - 1) {
+          setCurrentStoryIndex(prev => prev + 1);
+        } else if (currentUserIndex < userStories.length - 1) {
+          setCurrentUserIndex(prev => prev + 1);
+          setCurrentStoryIndex(0);
+        } else {
+          safeClose();
+        }
+      }, 5000);
+    }
 
     return () => {
       if (intervalRef.current) {
