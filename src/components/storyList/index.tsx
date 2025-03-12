@@ -1,4 +1,3 @@
-import React from "react";
 import { StoryListStyles } from "./styles";
 import { UserStory, Story } from "../../App";
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { StoryList, StoryViewer } from "./components";
 import { GlobalStyles } from "./styles/style";
 import { useFetchStories } from "./hooks";
